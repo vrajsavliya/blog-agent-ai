@@ -1,0 +1,787 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/blog_provider.dart';
+import '../models/topic_model.dart';
+import '../widgets/reusable_widgets.dart';
+import 'article_preview_screen.dart';
+
+class BlogWriterScreen extends StatefulWidget {
+  const BlogWriterScreen({super.key});
+
+  @override
+  State<BlogWriterScreen> createState() => _BlogWriterScreenState();
+}
+
+class _BlogWriterScreenState extends State<BlogWriterScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BlogProvider>().reset();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBg,
+      appBar: AppBar(
+        backgroundColor: kSurface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded,
+              color: kTextPrimary, size: 18),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Content Creator',
+          style: GoogleFonts.inter(
+              color: kTextPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.w700),
+        ),
+        centerTitle: true,
+      ),
+      body: Consumer<BlogProvider>(
+        builder: (context, provider, _) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Header card ───────────────────────────────────────────────
+                _HeaderCard(provider: provider),
+                const SizedBox(height: 24),
+
+                // ── Progress bar ──────────────────────────────────────────────
+                if (provider.isRunning ||
+                    provider.isAwaitingSelection ||
+                    provider.currentStep == PipelineStep.done)
+                  _ProgressSection(provider: provider),
+
+                // ── Pipeline steps ────────────────────────────────────────────
+                Text(
+                  'PIPELINE STEPS',
+                  style: GoogleFonts.inter(
+                      color: kTextSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2),
+                ),
+                const SizedBox(height: 12),
+                ..._buildStepIndicators(provider),
+                const SizedBox(height: 24),
+
+                // ── Topic Selection (shown after topics are fetched) ───────────
+                if (provider.isAwaitingSelection)
+                  _TopicSelectionPanel(provider: provider),
+
+                // ── Action buttons ────────────────────────────────────────────
+                _ActionButtons(provider: provider),
+                const SizedBox(height: 40),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  List<Widget> _buildStepIndicators(BlogProvider provider) {
+    int currentIndex;
+    switch (provider.currentStep) {
+      case PipelineStep.idle:
+      case PipelineStep.fetchingTopics:
+      case PipelineStep.evaluatingTopics:
+        currentIndex = 0;
+        break;
+      case PipelineStep.awaitingTopicSelection:
+        currentIndex = 1;
+        break;
+      case PipelineStep.generatingSeo:
+      case PipelineStep.generatingContent:
+      case PipelineStep.generatingMetadata:
+      case PipelineStep.generatingImages:
+      case PipelineStep.optimizingContent:
+      case PipelineStep.saving:
+        currentIndex = 2;
+        break;
+      case PipelineStep.done:
+      case PipelineStep.error:
+        currentIndex = 3;
+        break;
+    }
+
+    final isDone = provider.currentStep == PipelineStep.done;
+    final isError = provider.currentStep == PipelineStep.error;
+
+    final steps = [
+      ('Collecting trending topics', 'Market Analysis & Topic Scoring'),
+      ('Select topics', 'Choose the best opportunity'),
+      ('Generating blogs', 'Content Engine & Optimization'),
+      ('Completed', 'Article saved and ready to publish'),
+    ];
+
+    return steps.asMap().entries.map((entry) {
+      final i = entry.key;
+      final (title, subtitle) = entry.value;
+      final isActive = currentIndex == i && !isDone && provider.currentStep != PipelineStep.idle;
+      final isStepDone = isDone || currentIndex > i || (provider.currentStep == PipelineStep.idle && false);
+      final isStepError = isError && currentIndex == i;
+
+      return StepIndicator(
+        stepNumber: i + 1,
+        title: title,
+        subtitle: subtitle,
+        isActive: isActive,
+        isDone: isStepDone,
+        isError: isStepError,
+      );
+    }).toList();
+  }
+}
+
+// ── Header Card ───────────────────────────────────────────────────────────────
+class _HeaderCard extends StatelessWidget {
+  final BlogProvider provider;
+  const _HeaderCard({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: kCardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: kBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: kAccentGradient,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.article_rounded,
+                    color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Content Generation Pipeline',
+                        style: GoogleFonts.inter(
+                            color: kTextPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700)),
+                    Text(
+                      'Topics → Select → Generate → Complete',
+                      style: GoogleFonts.inter(
+                          color: kTextSecondary, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            provider.stepLabel,
+            style: GoogleFonts.inter(
+              color: provider.currentStep == PipelineStep.error
+                  ? kRed
+                  : provider.currentStep == PipelineStep.done
+                      ? kGreen
+                      : provider.isAwaitingSelection
+                          ? kOrange
+                          : kTextSecondary,
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Progress Section ──────────────────────────────────────────────────────────
+class _ProgressSection extends StatelessWidget {
+  final BlogProvider provider;
+  const _ProgressSection({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Progress',
+                  style: GoogleFonts.inter(
+                      color: kTextSecondary, fontSize: 12)),
+              Text('${(provider.progress * 100).toStringAsFixed(0)}%',
+                  style: GoogleFonts.inter(
+                      color: kAccentLight,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: provider.progress,
+              backgroundColor: kBorder,
+              valueColor: const AlwaysStoppedAnimation<Color>(kAccent),
+              minHeight: 6,
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Topic Selection Panel (Auto & Manual) ─────────────────────────────────────
+class _TopicSelectionPanel extends StatefulWidget {
+  final BlogProvider provider;
+  const _TopicSelectionPanel({required this.provider});
+
+  @override
+  State<_TopicSelectionPanel> createState() => _TopicSelectionPanelState();
+}
+
+class _TopicSelectionPanelState extends State<_TopicSelectionPanel>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabs;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabs = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = widget.provider;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Section label ───────────────────────────────────────────────────
+          Row(
+            children: [
+              const Icon(Icons.topic_rounded, color: kOrange, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                'SELECT TOPIC',
+                style: GoogleFonts.inter(
+                    color: kOrange,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // ── Tab switcher (Auto / Manual) ────────────────────────────────────
+          Container(
+            decoration: BoxDecoration(
+              color: kCardBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: kBorder),
+            ),
+            child: Column(
+              children: [
+                // Tab bar
+                Container(
+                  margin: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: kBg,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: TabBar(
+                    controller: _tabs,
+                    labelStyle: GoogleFonts.inter(
+                        fontSize: 12, fontWeight: FontWeight.w700),
+                    unselectedLabelStyle: GoogleFonts.inter(fontSize: 12),
+                    labelColor: Colors.white,
+                    unselectedLabelColor: kTextSecondary,
+                    indicator: BoxDecoration(
+                      gradient: kAccentGradient,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    tabs: const [
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.auto_awesome_rounded, size: 14),
+                            SizedBox(width: 6),
+                            Text('Auto Select'),
+                          ],
+                        ),
+                      ),
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.touch_app_rounded, size: 14),
+                            SizedBox(width: 6),
+                            Text('Manual Select'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Tab content
+                SizedBox(
+                  height: 280,
+                  child: TabBarView(
+                    controller: _tabs,
+                    children: [
+                      // ── AUTO SELECT TAB ─────────────────────────────────────
+                      _AutoSelectTab(provider: provider),
+
+                      // ── MANUAL SELECT TAB ───────────────────────────────────
+                      _ManualSelectTab(provider: provider),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Auto Select Tab ───────────────────────────────────────────────────────────
+class _AutoSelectTab extends StatelessWidget {
+  final BlogProvider provider;
+  const _AutoSelectTab({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    final topic = provider.topics.isNotEmpty ? provider.topics.first : null;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'AI picked the highest-scoring topic for you:',
+            style: GoogleFonts.inter(color: kTextSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 12),
+          if (topic != null)
+            _TopicCard(
+              topic: topic,
+              isSelected: true,
+              showBadge: true,
+              badgeLabel: '🏆 Top Pick',
+              onTap: null,
+            ),
+          const Spacer(),
+          Text(
+            'Switch to "Manual Select" to choose a different topic.',
+            style: GoogleFonts.inter(color: kTextSecondary, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Manual Select Tab ─────────────────────────────────────────────────────────
+class _ManualSelectTab extends StatelessWidget {
+  final BlogProvider provider;
+  const _ManualSelectTab({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: provider.topics.length,
+      itemBuilder: (context, i) {
+        final topic = provider.topics[i];
+        final isSelected = provider.selectedTopic?.title == topic.title;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _TopicCard(
+            topic: topic,
+            isSelected: isSelected,
+            showBadge: false,
+            badgeLabel: '',
+            onTap: () => provider.selectTopic(topic),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Topic Card ────────────────────────────────────────────────────────────────
+class _TopicCard extends StatelessWidget {
+  final Topic topic;
+  final bool isSelected;
+  final bool showBadge;
+  final String badgeLabel;
+  final VoidCallback? onTap;
+
+  const _TopicCard({
+    required this.topic,
+    required this.isSelected,
+    required this.showBadge,
+    required this.badgeLabel,
+    required this.onTap,
+  });
+
+  Color _scoreColor(double score) {
+    if (score >= 0.7) return kGreen;
+    if (score >= 0.45) return kOrange;
+    return kRed;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? kAccent.withValues(alpha: 0.08)
+              : kBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? kAccent : kBorder,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Selection indicator
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 18,
+              height: 18,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: isSelected ? kAccentGradient : null,
+                border: Border.all(
+                  color: isSelected ? Colors.transparent : kBorder,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check_rounded,
+                      color: Colors.white, size: 11)
+                  : null,
+            ),
+
+            // Topic info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          topic.title,
+                          style: GoogleFonts.inter(
+                            color: kTextPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      if (showBadge)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: kOrange.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            badgeLabel,
+                            style: GoogleFonts.inter(
+                                color: kOrange,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (topic.keywords.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        topic.keywords.take(3).join(' · '),
+                        style: GoogleFonts.inter(
+                            color: kTextSecondary, fontSize: 11),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // Score badge
+            Container(
+              margin: const EdgeInsets.only(left: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: _scoreColor(topic.score).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                (topic.score * 100).toStringAsFixed(0),
+                style: GoogleFonts.inter(
+                  color: _scoreColor(topic.score),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Action Buttons ────────────────────────────────────────────────────────────
+class _ActionButtons extends StatefulWidget {
+  final BlogProvider provider;
+  const _ActionButtons({required this.provider});
+
+  @override
+  State<_ActionButtons> createState() => _ActionButtonsState();
+}
+
+class _ActionButtonsState extends State<_ActionButtons> {
+  final TextEditingController _customTopicController = TextEditingController();
+  final TextEditingController _domainController = TextEditingController();
+
+  @override
+  void dispose() {
+    _customTopicController.dispose();
+    _domainController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = widget.provider;
+    // ── Done state ────────────────────────────────────────────────────────────
+    if (provider.currentStep == PipelineStep.done && provider.article != null) {
+      return Column(
+        children: [
+          GradientButton(
+            label: 'View Generated Article',
+            icon: Icons.article_rounded,
+            width: double.infinity,
+            gradient: const LinearGradient(
+                colors: [Color(0xFF00C896), Color(0xFF00A0E9)]),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    ArticlePreviewScreen(article: provider.article!),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GradientButton(
+            label: provider.isPublishing ? 'Publishing...' : 'Publish to WordPress',
+            icon: provider.isPublishing ? null : Icons.cloud_upload_rounded,
+            width: double.infinity,
+            isLoading: provider.isPublishing,
+            gradient: const LinearGradient(
+                colors: [Color(0xFFE44D26), Color(0xFFF16529)]),
+            onPressed: provider.isPublishing ? null : () async {
+              final success = await provider.publishToWordPress();
+              if (success && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Successfully published to WordPress!', style: GoogleFonts.inter(color: Colors.white, fontSize: 13)),
+                    backgroundColor: kGreen.withValues(alpha: 0.9),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    margin: const EdgeInsets.all(16),
+                  ),
+                );
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          GradientButton(
+            label: 'Generate Another',
+            icon: Icons.refresh_rounded,
+            width: double.infinity,
+            gradient: const LinearGradient(
+                colors: [Color(0xFF3A3A6A), Color(0xFF2A2A4A)]),
+            onPressed: () => provider.fetchAndEvaluateTopics(),
+          ),
+        ],
+      );
+    }
+
+    // ── Error state ───────────────────────────────────────────────────────────
+    if (provider.currentStep == PipelineStep.error) {
+      return Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: kRed.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: kRed.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded,
+                    color: kRed, size: 16),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    provider.errorMessage,
+                    style: GoogleFonts.inter(color: kRed, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          GradientButton(
+            label: 'Retry',
+            icon: Icons.refresh_rounded,
+            width: double.infinity,
+            onPressed: () => provider.fetchAndEvaluateTopics(),
+          ),
+        ],
+      );
+    }
+
+    // ── Awaiting topic selection ───────────────────────────────────────────────
+    if (provider.isAwaitingSelection) {
+      return GradientButton(
+        label: 'Generate Article for Selected Topic',
+        icon: Icons.rocket_launch_rounded,
+        width: double.infinity,
+        gradient: const LinearGradient(
+            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)]),
+        onPressed: () => provider.continueFromTopic(),
+      );
+    }
+
+    // ── Idle / Running state ──────────────────────────────────────────────────
+    return Column(
+      children: [
+        if (!provider.isRunning && provider.currentStep == PipelineStep.idle)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: TextField(
+              controller: _domainController,
+              decoration: InputDecoration(
+                hintText: 'Enter target domain or niche (e.g. Tech Startups)...',
+                hintStyle: GoogleFonts.inter(color: kTextSecondary, fontSize: 13),
+                filled: true,
+                fillColor: kCardBg,
+                prefixIcon: const Icon(Icons.language_rounded, color: kTextSecondary, size: 20),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: kBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: kBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: kAccent),
+                ),
+              ),
+              style: GoogleFonts.inter(color: kTextPrimary, fontSize: 13),
+            ),
+          ),
+        if (!provider.isRunning && provider.currentStep == PipelineStep.idle)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: TextField(
+              controller: _customTopicController,
+              decoration: InputDecoration(
+                hintText: 'Enter a custom topic to research (optional)...',
+                hintStyle: GoogleFonts.inter(color: kTextSecondary, fontSize: 13),
+                filled: true,
+                fillColor: kCardBg,
+                prefixIcon: const Icon(Icons.search_rounded, color: kTextSecondary, size: 20),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: kBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: kBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: kAccent),
+                ),
+              ),
+              style: GoogleFonts.inter(color: kTextPrimary, fontSize: 13),
+            ),
+          ),
+        GradientButton(
+          label: provider.isRunning ? 'Running Pipeline...' : 'Discover Topics',
+          icon: provider.isRunning ? null : Icons.search_rounded,
+          width: double.infinity,
+          isLoading: provider.isRunning,
+          onPressed: provider.isRunning
+              ? null
+              : () => provider.fetchAndEvaluateTopics(_customTopicController.text, _domainController.text),
+        ),
+      ],
+    );
+  }
+}
