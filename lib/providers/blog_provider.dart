@@ -20,6 +20,7 @@ enum PipelineStep {
   generatingMetadata,
   generatingImages,
   optimizingContent, // NEW — AI Search Optimization layer
+  optimizingYoast, // NEW - Yoast SEO validation loop
   saving,
   done,
   error,
@@ -69,9 +70,11 @@ class BlogProvider extends ChangeNotifier {
       case PipelineStep.generatingImages:
         return 6 / 8;
       case PipelineStep.optimizingContent:
-        return 7 / 8;
+        return 7 / 9;
+      case PipelineStep.optimizingYoast:
+        return 8 / 9;
       case PipelineStep.saving:
-        return 7.5 / 8;
+        return 8.5 / 9;
       case PipelineStep.done:
         return 1.0;
       case PipelineStep.error:
@@ -102,6 +105,7 @@ class BlogProvider extends ChangeNotifier {
       case PipelineStep.generatingMetadata:
       case PipelineStep.generatingImages:
       case PipelineStep.optimizingContent:
+      case PipelineStep.optimizingYoast:
       case PipelineStep.saving:
         return 'Step 3/4 — Generating blog...';
       case PipelineStep.done:
@@ -239,13 +243,20 @@ class BlogProvider extends ChangeNotifier {
         fullArticleMarkdown: blogContent.fullArticleMarkdown,
       );
 
-      // ── Step 8: Save to Firestore ─────────────────────────────────────────────
+      // ── Step 8: Yoast SEO Validation Loop ───────────────────────────────────
+      _setStep(PipelineStep.optimizingYoast);
+      final finalBlogContent = await _llmService.runYoastOptimization(
+        content: blogContent,
+        primaryKeyword: seoData.primaryKeyword,
+      );
+
+      // ── Step 9: Save to Firestore ─────────────────────────────────────────────
       _setStep(PipelineStep.saving);
       _article = Article(
         id: partialArticle.id,
         topic: _selectedTopic!,
         seo: seoData,
-        content: blogContent,
+        content: finalBlogContent,
         images: imagePackage,
         metadata: metadata,
         aiOptimization: aiOptimization,

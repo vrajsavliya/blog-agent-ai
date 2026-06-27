@@ -601,10 +601,12 @@ int pipelineStepIndex(PipelineStep step) {
       return 5;
     case PipelineStep.optimizingContent:
       return 6;
-    case PipelineStep.saving:
+    case PipelineStep.optimizingYoast:
       return 7;
-    case PipelineStep.done:
+    case PipelineStep.saving:
       return 8;
+    case PipelineStep.done:
+      return 9;
     case PipelineStep.error:
       return -1;
   }

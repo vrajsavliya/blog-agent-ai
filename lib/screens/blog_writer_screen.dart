@@ -105,6 +105,7 @@ class _BlogWriterScreenState extends State<BlogWriterScreen> {
       case PipelineStep.generatingMetadata:
       case PipelineStep.generatingImages:
       case PipelineStep.optimizingContent:
+      case PipelineStep.optimizingYoast:
       case PipelineStep.saving:
         currentIndex = 2;
         break;
