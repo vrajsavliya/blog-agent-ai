@@ -382,7 +382,7 @@ class _ImagesTab extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.6),
+                                color: Colors.black.withValues(alpha: 0.6),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.download, color: Colors.white, size: 20),
@@ -405,69 +405,6 @@ class _ImagesTab extends StatelessWidget {
   }
 }
 
-class _ImageCard extends StatelessWidget {
-  final BlogImageInfo image;
-  final String label;
-  final void Function(String, String) onCopy;
-
-  const _ImageCard({required this.image, required this.label, required this.onCopy});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: kCardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: kBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                    color: kAccentLight,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2),
-              ),
-              GestureDetector(
-                onTap: () => onCopy(image.prompt, '$label Prompt'),
-                child: const Icon(Icons.copy_rounded, color: kTextSecondary, size: 14),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Prompt box
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: kBg,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: kBorder),
-            ),
-            child: Text(
-              image.prompt.isEmpty ? 'No prompt generated' : image.prompt,
-              style: GoogleFonts.inter(
-                  color: kTextPrimary, fontSize: 12, height: 1.6),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _ImageMeta('Alt Text', image.altText),
-          const SizedBox(height: 6),
-          _ImageMeta('Caption', image.caption),
-          const SizedBox(height: 6),
-          _ImageMeta('Placement', image.placement),
-        ],
-      ),
-    );
-  }
-}
 
 class _ImageMeta extends StatelessWidget {
   final String label;

@@ -1,4 +1,3 @@
-import 'dart:io';
 
 Future<void> downloadImage(String imagePath, String filename) async {
   // On Native, the file is already saved at imagePath.

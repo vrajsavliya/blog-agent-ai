@@ -64,6 +64,7 @@ class BlogContent {
   final List<String> faqItems;
   final List<String> internalLinkingSuggestions;
   final int wordCount;
+  final List<String> citations;
 
   BlogContent({
     required this.title,
@@ -72,6 +73,7 @@ class BlogContent {
     required this.faqItems,
     required this.internalLinkingSuggestions,
     required this.wordCount,
+    this.citations = const [],
   });
 
   factory BlogContent.fromJson(Map<String, dynamic> json) => BlogContent(
@@ -82,6 +84,7 @@ class BlogContent {
         internalLinkingSuggestions:
             JsonHelper.safeList(json['internalLinkingSuggestions']),
         wordCount: json['wordCount'] ?? 0,
+        citations: JsonHelper.safeList(json['citations']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -91,6 +94,7 @@ class BlogContent {
         'faqItems': faqItems,
         'internalLinkingSuggestions': internalLinkingSuggestions,
         'wordCount': wordCount,
+        'citations': citations,
       };
 }
 
