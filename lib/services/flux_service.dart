@@ -12,7 +12,7 @@ class FluxService {
   
   FluxService() {
     // Use the API key provided in .env for NVIDIA NIM
-    final apiKey = dotenv.env['FLUX.1-schnell-API'] ?? dotenv.env['FLUX_API_KEY'] ?? dotenv.env['GROK_API_KEY'] ?? '';
+    final apiKey = dotenv.env['FLUX.1-schnell-API'] ?? dotenv.env['FLUX_API_KEY'] ?? dotenv.env['GROK_API_KEY_2'] ?? '';
 
     _dio = Dio(BaseOptions(
       baseUrl: 'https://ai.api.nvidia.com/v1/genai',

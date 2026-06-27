@@ -406,35 +406,7 @@ class _ImagesTab extends StatelessWidget {
 }
 
 
-class _ImageMeta extends StatelessWidget {
-  final String label;
-  final String value;
-  const _ImageMeta(this.label, this.value);
 
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 80,
-          child: Text(label,
-              style: GoogleFonts.inter(
-                  color: kTextSecondary, fontSize: 11)),
-        ),
-        Expanded(
-          child: Text(
-            value.isEmpty ? '—' : value,
-            style: GoogleFonts.inter(
-                color: kTextPrimary,
-                fontSize: 11,
-                fontWeight: FontWeight.w500),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 // ── Meta Tab ──────────────────────────────────────────────────────────────────
 class _MetaTab extends StatelessWidget {

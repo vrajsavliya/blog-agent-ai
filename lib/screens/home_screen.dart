@@ -10,15 +10,56 @@ import '../widgets/reusable_widgets.dart';
 import '../services/firestore_service.dart';
 import 'blog_writer_screen.dart';
 import 'article_preview_screen.dart';
+import '../widgets/history_tab.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      body: CustomScrollView(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _buildGenerateTab(context),
+          const HistoryTab(),
+        ],
+      ),
+      floatingActionButton: _currentIndex == 0 ? _buildFAB(context) : null,
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: kSurface,
+        selectedItemColor: kAccent,
+        unselectedItemColor: kTextSecondary,
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.auto_awesome),
+            label: 'Generate',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: 'History',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGenerateTab(BuildContext context) {
+    return CustomScrollView(
         slivers: [
           // ── Header ────────────────────────────────────────────────────────────
           SliverAppBar(
@@ -293,45 +334,45 @@ class HomeScreen extends StatelessWidget {
             },
           ),
         ],
-      ),
+      );
+  }
 
-      // ── FAB ────────────────────────────────────────────────────────────────────
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          gradient: kAccentGradient,
+  Widget _buildFAB(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: kAccentGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: kAccent.withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: kAccent.withValues(alpha: 0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const BlogWriterScreen()),
-            ),
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.add_rounded, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Create New Article',
-                    style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14),
-                  ),
-                ],
-              ),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const BlogWriterScreen()),
+          ),
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Create New Article',
+                  style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14),
+                ),
+              ],
             ),
           ),
         ),

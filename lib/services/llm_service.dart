@@ -11,7 +11,7 @@ class LlmService {
   late final String _apiKey;
 
   LlmService() {
-    _apiKey = dotenv.env['GROK_API_KEY'] ?? '';
+    _apiKey = dotenv.env['GROK_API_KEY_2'] ?? '';
     _dio = Dio(BaseOptions(
       baseUrl: 'https://api.groq.com/openai/v1',
       headers: {
